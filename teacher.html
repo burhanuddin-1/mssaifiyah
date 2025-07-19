@@ -192,49 +192,98 @@
       ]
     };
 
-    function loginTeacher() {
-      const id = document.getElementById("teacherId").value.trim();
-      const pass = document.getElementById("teacherPass").value.trim();
-      if (id === teacherId && pass === teacherPass) {
-        document.getElementById("loginBox").classList.add("hidden");
-        document.getElementById("teacherPanel").classList.remove("hidden");
-        document.getElementById("dateSelect").valueAsDate = new Date();
-        loadStudents();
-      } else {
-        document.getElementById("loginError").textContent = "Invalid ID or password.";
+// In teacher.html, replace the login function with:
+async function loginTeacher() {
+  const id = document.getElementById("teacherId").value.trim();
+  const pass = document.getElementById("teacherPass").value.trim();
+  
+  try {
+    const response = await fetch('/api/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ username: id, password: pass, role: 'teacher' })
+    });
+    
+    if (response.ok) {
+      const { token, user } = await response.json();
+      if (user.role !== 'teacher') {
+        throw new Error('Access denied: Teacher role required');
       }
+      
+      localStorage.setItem('teacherToken', token);
+      localStorage.setItem('teacher', JSON.stringify(user));
+      
+      document.getElementById("loginBox").classList.add("hidden");
+      document.getElementById("teacherPanel").classList.remove("hidden");
+      document.getElementById("dateSelect").valueAsDate = new Date();
+      loadStudents();
+    } else {
+      const error = await response.json();
+      throw new Error(error.message || 'Login failed');
     }
+  } catch (error) {
+    console.error('Login error:', error);
+    document.getElementById("loginError").textContent = error.message || 'Login failed. Please try again.';
+  }
+}
 
-    function logout() {
-      document.getElementById("teacherPanel").classList.add("hidden");
-      document.getElementById("loginBox").classList.remove("hidden");
-    }
+function logout() {
+  localStorage.removeItem('teacherToken');
+  localStorage.removeItem('teacher');
+  document.getElementById("teacherPanel").classList.add("hidden");
+  document.getElementById("loginBox").classList.remove("hidden");
+  document.getElementById("teacherPass").value = "";
+}
 
     function getStorageKey(cls, date) {
       return `attendance_teacher_class_${cls}_date_${date}`;
     }
 
-    function loadStudents() {
-      const cls = document.getElementById("classSelect").value;
-      const students = studentData[cls] || [];
-      const tbody = document.getElementById("attendanceTable");
-      tbody.innerHTML = "";
-      students.forEach((s, i) => {
-        const row = document.createElement("tr");
-        row.innerHTML = `<td>${i+1}</td><td>${s.id}</td><td>${s.name}</td>`;
-        const cell = document.createElement("td");
-        cell.classList.add("clickable");
-        cell.onclick = () => {
-          cell.textContent = cell.textContent === "" ? "✅" :
-                             cell.textContent === "✅" ? "❌" :
-                             cell.textContent === "❌" ? "🚫" : "";
-          saveAttendance();
-        };
-        row.appendChild(cell);
-        tbody.appendChild(row);
-      });
-      loadAttendance();
-    }
+    async function loadStudents() {
+  try {
+    const response = await fetch('/api/students', {
+      headers: getAuthHeader()
+    });
+    
+    if (!response.ok) throw new Error('Failed to load students');
+    
+    const students = await response.json();
+    const tbody = document.getElementById("attendanceTable");
+    tbody.innerHTML = ''; // Clear existing rows
+    
+    students.forEach((student, index) => {
+      const row = tbody.insertRow();
+      row.insertCell(0).textContent = student.id;
+      row.insertCell(1).textContent = student.fullName;
+      
+      // Add attendance radio buttons
+      const statusCell = row.insertCell(2);
+      const presentRadio = document.createElement('input');
+      presentRadio.type = 'radio';
+      presentRadio.name = `attendance-${index}`;
+      presentRadio.value = 'present';
+      presentRadio.onchange = () => saveAttendance();
+      statusCell.appendChild(document.createTextNode('✅ '));
+      statusCell.appendChild(presentRadio);
+      
+      const absentRadio = document.createElement('input');
+      absentRadio.type = 'radio';
+      absentRadio.name = `attendance-${index}`;
+      absentRadio.value = 'absent';
+      absentRadio.onchange = () => saveAttendance();
+      statusCell.appendChild(document.createTextNode(' ❌ '));
+      statusCell.appendChild(absentRadio);
+      
+      // Set default to present
+      presentRadio.checked = true;
+    });
+  } catch (error) {
+    console.error('Error loading students:', error);
+    alert('Failed to load students. Please try again.');
+  }
+}
 
     function loadAttendance() {
       const cls = document.getElementById("class").value;
@@ -246,19 +295,34 @@
       });
     }
 
-    function saveAttendance() {
-      const cls = document.getElementById("classSelect").value;
-      const date = document.getElementById("dateSelect").value;
-      const rows = document.getElementById("attendanceTable").rows;
-      const data = {};
-      for (let i = 0; i < rows.length; i++) {
-        data[i] = rows[i].cells[3].textContent;
-      }
-      localStorage.setItem(getStorageKey(cls, date), JSON.stringify(data));
-      const msg = document.getElementById("saveMsg");
-      msg.style.display = "block";
-      setTimeout(() => msg.style.display = "none", 1500);
-    }
+ async function saveAttendance() {
+  const date = document.getElementById("dateSelect").value;
+  const rows = document.getElementById("attendanceTable").rows;
+  const attendanceData = [];
+  
+  for (let i = 0; i < rows.length; i++) {
+    const studentId = rows[i].cells[0].textContent;
+    const status = rows[i].querySelector('input[type="radio"]:checked').value;
+    attendanceData.push({ studentId, status, date });
+  }
+  
+  try {
+    const response = await fetch('/api/attendance', {
+      method: 'POST',
+      headers: getAuthHeader(),
+      body: JSON.stringify(attendanceData)
+    });
+    
+    if (!response.ok) throw new Error('Failed to save attendance');
+    
+    const msg = document.getElementById("saveMsg");
+    msg.style.display = "block";
+    setTimeout(() => msg.style.display = "none", 1500);
+  } catch (error) {
+    console.error('Error saving attendance:', error);
+    alert('Failed to save attendance. Please try again.');
+  }
+}
 
     function markAllPresent() {
       const rows = document.getElementById("attendanceTable").rows;
