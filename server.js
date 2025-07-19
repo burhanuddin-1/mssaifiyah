@@ -138,6 +138,20 @@ async function ensureUsersExist() {
   }
 }
 
+// Middleware to verify JWT token
+const authenticateToken = (req, res, next) => {
+  const authHeader = req.headers['authorization'];
+  const token = authHeader && authHeader.split(' ')[1];
+  
+  if (!token) return res.sendStatus(401);
+  
+  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
+    if (err) return res.sendStatus(403);
+    req.user = user;
+    next();
+  });
+};
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname,'index.html'));
@@ -419,20 +433,6 @@ app.post('/api/students/login', async (req, res) => {
     res.status(500).json({ error: 'Internal server error' });
   }
 });
-
-// Middleware to verify JWT token
-const authenticateToken = (req, res, next) => {
-  const authHeader = req.headers['authorization'];
-  const token = authHeader && authHeader.split(' ')[1];
-  
-  if (!token) return res.sendStatus(401);
-  
-  jwt.verify(token, process.env.JWT_SECRET || 'your-secret-key', (err, user) => {
-    if (err) return res.sendStatus(403);
-    req.user = user;
-    next();
-  });
-};
 
 // Protected routes
 app.get('/api/students', authenticateToken, async (req, res) => {
