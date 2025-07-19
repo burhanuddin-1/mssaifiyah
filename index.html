@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Madrasa Saifiyah Bagasara</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Amiri', serif;
+      background-color: #002147;
+      color: white;
+    }
+
+    header {
+      background-color: #001b36;
+      display: flex;
+      align-items: center;
+      padding: 10px 20px;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+      position: relative; /* Add this */
+    }
+
+    .logo {
+      height: 70px;
+      margin-right: 15px;
+    }
+
+    .header-title {
+      font-size: 26px;
+      font-weight: bold;
+      color: #ffffff;
+      font-family: 'Amiri', serif;
+    }
+
+    .hero {
+      height: 100vh;
+      background: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0,0,0,0.6)), url('5883.jpg') no-repeat center center/cover;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 0 20px;
+    }
+
+    .hero h1 {
+      font-size: 42px;
+      color: #00035b;
+      margin-bottom: 20px;
+    }
+
+    .hero p {
+      font-size: 20px;
+      max-width: 700px;
+      margin: 0 auto;
+    }
+
+    .hero button {
+      margin-top: 25px;
+      background-color: #00035b;
+      color: #ffffff;
+      padding: 12px 24px;
+      font-size: 18px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+
+    .hero button:hover {
+      background-color: #00035b;
+    }
+
+    @media (max-width: 768px) {
+      .header-title {
+        font-size: 20px;
+      }
+
+      .hero h1 {
+        font-size: clamp(24px, 5vw, 42px);
+      }
+
+      .hero p {
+        font-size: 16px;
+      }
+
+      header {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+      }
+
+      .logo {
+        margin: 0 0 10px 0;
+      }
+      .logo2 {
+        max-width: 60px;
+        max-height: 60px;
+        margin-top: 0;
+      }
+    }
+
+    .logo2 {
+      max-width: 100px;
+      max-height: 100px;
+      position: absolute;
+      bottom: 20px;    /* Aligns to the bottom */
+      right: 20px;  /* Aligns to the right */
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo1.png" alt="Madrasa Logo Left" class="logo" />
+    <div class="header-title">Madrasa Saifiyah Bagasara</div>
+    <img src="logo2.png" alt="Madrasa Logo Right" class="logo2" />
+  </header>
+
+  <section class="hero">
+    <div>
+      <h1>طلب العلم فريضة على كل مسلم ومسلمة</h1>
+      <p>Welcome to the official attendance portal of Madrasa Saifiyah Bagasara.</p>
+      <a href="app.html"><button>Login to Portal</button></a>
+    </div>
+  </section>
+</body>
+</html>

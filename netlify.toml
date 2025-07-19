@@ -1,0 +1,30 @@
+[build]
+command = "npm install && npm run build"
+base = ""
+publish = "dist"
+
+[build.environment]
+NODE_ENV = "production"
+
+[context.production.environment]
+JWT_SECRET = "${JWT_SECRET}"
+
+[functions]
+node_bundler = "webpack"
+
+# Only include specific node modules if needed
+[functions.include_node_modules]
+external_node_modules = []
+
+[[redirects]]
+from = "/*"
+to = "/index.html"
+status = 200
+
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-XSS-Protection = "1; mode=block"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "same-origin"

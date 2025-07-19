@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Teacher Panel - Attendance</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Amiri', serif;
+      background-color: #1d3e63;
+      color: white;
+      text-align: center;
+    }
+    .container {
+      max-width: 960px;
+      margin: 30px auto;
+      padding: 25px;
+      border-radius: 16px;
+      background: rgba(255, 255, 255, 0.07);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 30px rgba(0,0,0,0.4);
+    }
+    h2 {
+      color: #FFD700;
+      margin-bottom: 20px;
+    }
+    input, select, button {
+      font-family: 'Amiri', serif;
+      padding: 10px;
+      margin: 5px;
+      border-radius: 8px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background-color: #FFD700;
+      color: #002147;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e5c100;
+    }
+    .hidden { display: none; }
+    table {
+      width: 100%;
+      margin-top: 20px;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid white;
+      padding: 8px;
+      font-size: 15px;
+    }
+    th {
+      background-color: #001f3f;
+      color: #FFD700;
+    }
+    td.clickable {
+      cursor: pointer;
+      background-color: rgba(255,255,255,0.1);
+    }
+    #saveMsg {
+      color: #00ff95;
+      margin-top: 10px;
+    }
+    @media (max-width: 768px) {
+      table, th, td { font-size: 13px; }
+      input, select, button { width: 100%; }
+    }
+
+     .logo2 {
+  max-width: 100px;
+  max-height: 100px;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>👩‍🏫 Teacher Login</h2>
+    <div id="loginBox">
+      <input type="text" id="teacherId" placeholder="Teacher ID" />
+      <input type="password" id="teacherPass" placeholder="Password" />
+      <br><button onclick="loginTeacher()">Login</button>
+      <p id="loginError" style="color: red;"></p>
+    </div>
+
+    <div id="teacherPanel" class="hidden">
+      <h2>📅 Mark Attendance</h2>
+      <select id="classSelect" onchange="loadStudents()">
+        <option value="KG">KG</option>
+        <option value="ATFAAL">ATFAAL</option>
+        <option value="1st">1st</option>
+        <option value="2">2</option>
+        <option value="3">3</option>
+      </select>
+      <input type="date" id="dateSelect" onchange="loadAttendance()" />
+      <button onclick="markAllPresent()">✅ Mark All Present</button>
+      <button onclick="saveAttendance()">💾 Save</button>
+      <button onclick="clearMarks()">❎ Deselect All</button>
+
+      <table>
+        <thead><tr><th>#</th><th>ID</th><th>Name</th><th>Status</th></tr></thead>
+        <tbody id="attendanceTable"></tbody>
+      </table>
+
+       <hr>
+<h2>📜 Leave Applications</h2>
+<button onclick="viewLeaveRequests()">📩 View Leave Requests</button>
+<table id="leaveTable" style="width:100%; margin-top:10px; display:none;">
+  <thead>
+    <tr>
+      <th>Student ID</th>
+      <th>Name</th>
+      <th>Class</th>
+      <th>From</th>
+      <th>To</th>
+      <th>Days</th>
+      <th>Reason</th>
+      <th>Submitted At</th>
+    </tr>
+  </thead>
+  <tbody id="leaveList"></tbody>
+</table>
+      <h2>🛠️ Change Username & Password</h2>
+<form onsubmit="changeCredentials(event)">
+  <input type="text" id="oldUsername" placeholder="Current Username" required />
+  <input type="password" id="oldPassword" placeholder="Current Password" required />
+  <input type="text" id="newUsername" placeholder="New Username" required />
+  <input type="password" id="newPassword" placeholder="New Password" required />
+  <button type="submit">🔑 Update Credentials</button>
+</form>
+<p id="changeMsg" style="color:lightgreen; display:none;">✅ Updated successfully!</p>
+
+      <h2>📊 Monthly Report</h2>
+      <select id="reportMonth">
+        <option value="01">Jan</option><option value="02">Feb</option><option value="03">Mar</option>
+        <option value="04">Apr</option><option value="05">May</option><option value="06">Jun</option>
+        <option value="07">Jul</option><option value="08">Aug</option><option value="09">Sep</option>
+        <option value="10">Oct</option><option value="11">Nov</option><option value="12">Dec</option>
+      </select>
+      <input type="number" id="reportYear" value="2025" min="2020" max="2030" />
+      <button onclick="generateMonthlyReport()">Generate</button>
+      <table id="reportTable" class="hidden">
+        <thead><tr><th>#</th><th>ID</th><th>Name</th><th>Present</th><th>Absent</th></tr></thead>
+        <tbody></tbody>
+      </table>
+      <br><button onclick="logout()">🔓 Logout</button>
+      <hr>
+
+    </div>
+  </div>
+
+  <script>
+    const teacherId = "30353110", teacherPass = "Batul52";
+    const studentData = {
+      "KG": [
+        { id: "40905333", name: "Burhanuddin bhai Hatim bhai Kapasi" }
+      ],
+      "ATFAAL": [
+        { id: "50221818", name: "Insiya bai Mohammed bhai Divasali" },
+        { id: "40905340", name: "Zainab bai Moiz bhai Hathyari" }
+      ],
+      "1st": [
+        { id: "12345678", name: "Burhanuddin bhai Aliasgar bhai Lati wala" },
+        { id: "50221817", name: "Hasan bhai Khuzaima bhai Kapasi" },
+        { id: "50221808", name: "Sakina bai Asif bhai Tarvadi" }
+      ],
+      "2": [
+        { id: "50221819", name: "Aliasgar bhai Husain bhai Sham" },
+        { id: "40914838", name: "Amatullah bai Mufaddal bhai Bharamal" },
+        { id: "50211046", name: "Burhanuddin bhai Mohammed bhai Travadi" },
+        { id: "40905326", name: "Burhanuddin bhai Yunus bhai Tarvadi" },
+        { id: "50221821", name: "Jumana bai Firoz bhai Travadi" },
+        { id: "40914839", name: "Rukaiya bai Aliasgar bhai Bharmal" },
+        { id: "50210961", name: "Ummehani bai Aliasgar bhai Travadi" },
+        { id: "50230696", name: "Zainab bai Murtaza bhai Vanak" }
+      ],
+      "3": [
+        { id: "40905323", name: "Abizar bhai Burhanuddin bhai Khorakiwala" },
+        { id: "50210588", name: "Husain bhai Murtaza bhai Divasali" },
+        { id: "40905330", name: "Husen bhai Fakhruddin bhai Tarvadi" },
+        { id: "50211036", name: "Husen bhai Yusuf bhai Hirani" },
+        { id: "50221823", name: "Murtaza bhai Husain bhai Tarvadi" },
+        { id: "50161003", name: "Zahra bai Sadiq bhai Tarvadi" },
+        { id: "50210589", name: "Zainab bai Murtaza bhai Divasali" }
+      ]
+    };
+
+    function loginTeacher() {
+      const id = document.getElementById("teacherId").value.trim();
+      const pass = document.getElementById("teacherPass").value.trim();
+      if (id === teacherId && pass === teacherPass) {
+        document.getElementById("loginBox").classList.add("hidden");
+        document.getElementById("teacherPanel").classList.remove("hidden");
+        document.getElementById("dateSelect").valueAsDate = new Date();
+        loadStudents();
+      } else {
+        document.getElementById("loginError").textContent = "Invalid ID or password.";
+      }
+    }
+
+    function logout() {
+      document.getElementById("teacherPanel").classList.add("hidden");
+      document.getElementById("loginBox").classList.remove("hidden");
+    }
+
+    function getStorageKey(cls, date) {
+      return `attendance_teacher_class_${cls}_date_${date}`;
+    }
+
+    function loadStudents() {
+      const cls = document.getElementById("classSelect").value;
+      const students = studentData[cls] || [];
+      const tbody = document.getElementById("attendanceTable");
+      tbody.innerHTML = "";
+      students.forEach((s, i) => {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td>${i+1}</td><td>${s.id}</td><td>${s.name}</td>`;
+        const cell = document.createElement("td");
+        cell.classList.add("clickable");
+        cell.onclick = () => {
+          cell.textContent = cell.textContent === "" ? "✅" :
+                             cell.textContent === "✅" ? "❌" :
+                             cell.textContent === "❌" ? "🚫" : "";
+          saveAttendance();
+        };
+        row.appendChild(cell);
+        tbody.appendChild(row);
+      });
+      loadAttendance();
+    }
+
+    function loadAttendance() {
+      const cls = document.getElementById("class").value;
+      const date = document.getElementById("date").value;
+      const data = JSON.parse(localStorage.getItem(getStorageKey(cls, date)) || "{}");
+      const rows = document.getElementById("attendanceBody").rows;
+      Array.from(rows).forEach((row, i) => {
+        row.cells[3].textContent = data[i] || "";
+      });
+    }
+
+    function saveAttendance() {
+      const cls = document.getElementById("classSelect").value;
+      const date = document.getElementById("dateSelect").value;
+      const rows = document.getElementById("attendanceTable").rows;
+      const data = {};
+      for (let i = 0; i < rows.length; i++) {
+        data[i] = rows[i].cells[3].textContent;
+      }
+      localStorage.setItem(getStorageKey(cls, date), JSON.stringify(data));
+      const msg = document.getElementById("saveMsg");
+      msg.style.display = "block";
+      setTimeout(() => msg.style.display = "none", 1500);
+    }
+
+    function markAllPresent() {
+      const rows = document.getElementById("attendanceTable").rows;
+      for (let row of rows) row.cells[3].textContent = "✅";
+      saveAttendance();
+    }
+
+     function clearMarks() {
+  const rows = document.getElementById("attendanceTable").rows;
+  for (let row of rows) row.cells[3].textContent = "";
+  saveAttendance();
+}
+
+
+  function viewLeaveRequests() {
+  const leaveList = JSON.parse(localStorage.getItem("leaveRequests") || "[]");
+  const tbody = document.getElementById("leaveList");
+  const table = document.getElementById("leaveTable");
+
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+
+  tbody.innerHTML = "";
+
+  // Filter out expired leaves
+  const activeLeaves = leaveList.filter(req => {
+    const toDate = new Date(req.to || req.date);
+    toDate.setHours(0, 0, 0, 0);
+    return toDate >= today;
+  });
+
+  // Sort by submission time (newest first)
+  activeLeaves.sort((a, b) => new Date(b.time) - new Date(a.time));
+
+  if (activeLeaves.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8">No upcoming leave requests.</td></tr>`;
+  } else {
+    activeLeaves.forEach(req => {
+      const from = req.from || req.date;
+      const to = req.to || req.date;
+      const days = Math.ceil((new Date(to) - new Date(from)) / (1000 * 60 * 60 * 24)) + 1;
+
+      const row = document.createElement("tr");
+      row.innerHTML = `
+        <td>${req.id}</td>
+        <td>${req.name}</td>
+        <td>${req.classId}</td>
+        <td>${from}</td>
+        <td>${to}</td>
+        <td>${days}</td>
+        <td>${req.reason}</td>
+        <td>${req.time}</td>
+      `;
+      tbody.appendChild(row);
+    });
+  }
+
+  table.style.display = "table";
+}
+
+
+
+    function generateMonthlyReport() {
+      const month = document.getElementById("reportMonth").value;
+      const year = document.getElementById("reportYear").value;
+      const cls = document.getElementById("classSelect").value;
+      const students = studentData[cls] || [];
+      const report = {};
+      students.forEach(s => report[s.id] = { name: s.name, present: 0, absent: 0 });
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (!key.startsWith(`attendance_teacher_class_${cls}_date_`)) continue;
+        const [, y, m] = key.match(/date_(\d{4})-(\d{2})/) || [];
+        if (y !== year || m !== month) continue;
+        const data = JSON.parse(localStorage.getItem(key));
+        students.forEach((s, i) => {
+          const mark = data[i];
+          if (mark === "✅") report[s.id].present++;
+          else if (mark === "❌") report[s.id].absent++;
+        });
+      }
+
+      const tbody = document.querySelector("#reportTable tbody");
+      tbody.innerHTML = "";
+      students.forEach((s, i) => {
+        const r = report[s.id];
+        const row = `<tr><td>${i+1}</td><td>${s.id}</td><td>${s.name}</td><td>${r.present}</td><td>${r.absent}</td></tr>`;
+        tbody.innerHTML += row;
+      });
+      document.getElementById("reportTable").classList.remove("hidden");
+    }
+
+     function changeCredentials(event, role) {
+  event.preventDefault();
+
+  const oldUsername = document.getElementById("oldUsername").value.trim();
+  const oldPassword = document.getElementById("oldPassword").value.trim();
+  const newUsername = document.getElementById("newUsername").value.trim();
+  const newPassword = document.getElementById("newPassword").value.trim();
+
+  // Get stored credentials
+  const stored = JSON.parse(localStorage.getItem(`${role}Credentials`) || "{}");
+
+  if (oldUsername === stored.username && oldPassword === stored.password) {
+    // Save new credentials
+    localStorage.setItem(`${role}Credentials`, JSON.stringify({
+      username: newUsername,
+      password: newPassword
+    }));
+    document.getElementById("changeMsg").textContent = "✅ Credentials updated!";
+    document.getElementById("changeMsg").style.color = "lightgreen";
+  } else {
+    document.getElementById("changeMsg").textContent = "❌ Incorrect current credentials!";
+    document.getElementById("changeMsg").style.color = "red";
+  }
+
+  setTimeout(() => {
+    document.getElementById("changeMsg").textContent = "";
+  }, 3000);
+
+  // Optional: Clear form
+  event.target.reset();
+}
+  </script>
+      <img src="logo2.png" alt="Logo 2" class="logo2" />
+</body>
+</html>

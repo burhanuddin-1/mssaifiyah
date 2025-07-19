@@ -1,0 +1,27 @@
+[Unit]
+Description=Madrasa Attendance System
+Documentation=https://github.com/burhanuddin-1/BGS-M_Saifiyah
+After=network.target
+
+[Service]
+Type=simple
+User=node
+WorkingDirectory=/opt/madrasa-attendance
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=JWT_SECRET=${JWT_SECRET}
+
+# Resource limits
+MemoryLimit=1G
+CPUQuota=100%
+
+# Logging
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=madrasa-attendance
+
+[Install]
+WantedBy=multi-user.target

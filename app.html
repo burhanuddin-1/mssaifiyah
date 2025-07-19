@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Select Role - Attendance App</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Amiri', serif;
+      background-color: #1d3e63;
+      background-size: cover;
+      background-position: center;
+      color: #fff;
+    }
+
+    .container {
+      max-width: 950px;
+      margin: 80px auto;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 30px;
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 30px rgba(0, 0, 0, 0.4);
+      color: #fff;
+      text-align: center;
+    }
+
+    .logo-container {
+      margin-bottom: 30px;
+    }
+
+    .logo {
+      max-width: 300px;
+      height: auto;
+    }
+
+    h2 {
+      font-size: 28px;
+      margin-bottom: 25px;
+      color: #FFD700;
+    }
+
+    .role-button {
+      padding: 14px 30px;
+      margin: 10px;
+      font-size: 18px;
+      border-radius: 10px;
+      border: none;
+      background-color: #FFD700;
+      color: #002147;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background-color 0.3s ease;
+    }
+
+    .role-button:hover {
+      background-color: #e5c100;
+    }
+
+    @media (max-width: 768px) {
+      .container {
+        margin: 20px;
+        padding: 20px;
+      }
+
+      .role-button {
+        width: 100%;
+        box-sizing: border-box;
+      }
+
+      .logo {
+        max-width: 250px;
+      }
+    }
+
+     .logo2 {
+      max-width: 100px;
+      max-height: 100px;
+      position: absolute;
+      bottom: 20px;    /* Aligns to the bottom */
+      right: 20px;  /* Aligns to the right */
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <img src="logo2.png" alt="Logo 2" class="logo2" />
+  </header>
+  <div class="container">
+    <div class="logo-container">
+      <img src="logo.png" alt="Logo" class="logo" />
+    </div>
+    <h2>هل أنت طالب، مدرس أو مشرف؟</h2>
+    <a href="admin.html"><button class="role-button">Admin</button></a>
+    <a href="teacher.html"><button class="role-button">Teacher</button></a>
+    <a href="student.html"><button class="role-button">Student</button></a>
+  </div>
+</body>
+</html>

@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Student Portal</title>
+  <link href="https://fonts.googleapis.com/css2?family=Amiri&display=swap" rel="stylesheet">
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: 'Amiri', serif;
+      background-color: #1d3e63;
+      color: #fff;
+    }
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      background: rgba(255, 255, 255, 0.07);
+      padding: 20px;
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 0 30px rgba(0,0,0,0.4);
+    }
+    h2 {
+      color: #FFD700;
+      text-align: center;
+    }
+    input, textarea, button {
+      font-family: 'Amiri', serif;
+      font-size: 16px;
+      padding: 10px;
+      margin: 6px 0;
+      border: none;
+      border-radius: 8px;
+      width: 100%;
+    }
+    button {
+      background-color: #FFD700;
+      color: #002147;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e5c100;
+    }
+    table {
+      width: 100%;
+      margin-top: 15px;
+      border-collapse: collapse;
+    }
+    th, td {
+      border: 1px solid #fff;
+      padding: 8px;
+      text-align: left;
+    }
+    th {
+      background-color: #002147;
+      color: #FFD700;
+    }
+    .hidden {
+      display: none;
+    }
+    .logo2 {
+  max-width: 100px;
+  max-height: 100px;
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  z-index: 100;
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loginSection">
+      <h2>🎓 Student Login</h2>
+      <input type="text" id="studentId" placeholder="Enter Student ITS ID" />
+      <button onclick="loginStudent()">Login</button>
+    </div>
+
+    <div id="dashboardSection" class="hidden">
+      <h2 id="studentName"></h2>
+      <div id="studentInfo">
+        <h3>📋 Personal Details</h3>
+        <table id="studentDetailsTable"></table>
+      </div>
+      <div>
+        <h3>📅 Attendance History</h3>
+        <table>
+          <thead><tr><th>Date</th><th>Status</th></tr></thead>
+          <tbody id="attendanceTable"></tbody>
+        </table>
+      </div>
+      <div>
+        <h3>📨 Leave Application</h3>
+        <form onsubmit="submitLeave(event)">
+          <label>From:</label>
+          <input type="date" id="leaveFrom" required>
+          <label>To:</label>
+          <input type="date" id="leaveTo" required>
+          <textarea id="leaveReason" placeholder="Reason for leave" required></textarea>
+          <button type="submit">Submit Leave</button>
+        </form>
+        <p id="leaveSuccess" style="color:lightgreen; display:none;">✅ Leave submitted successfully!</p>
+        <button onclick="logoutStudent()">🔓 Logout</button>
+      </div>
+      <img src="logo2.png" alt="Logo 2" class="logo2" />
+    </div>
+  </div>
+
+  <script>
+    // Helper function to get JWT token
+    function getToken() {
+      return localStorage.getItem('studentToken');
+    }
+
+    // Helper function to set JWT token
+    function setToken(token) {
+      localStorage.setItem('studentToken', token);
+    }
+
+    // Helper function to clear JWT token
+    function clearToken() {
+      localStorage.removeItem('studentToken');
+    }
+
+    // Helper function to get auth header
+    function getAuthHeader() {
+      const token = getToken();
+      if (token) {
+        return {
+          'Authorization': `Bearer ${token}`
+        };
+      }
+      return {};
+    }
+
+    async function loginStudent() {
+      const studentId = document.getElementById("studentId").value;
+      const password = prompt("Enter your password:");
+      
+      if (!password) {
+        return;
+      }
+
+      try {
+        const response = await fetch('/api/students/login', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ studentId, password })
+        });
+        
+        if (!response.ok) {
+          const error = await response.json();
+          throw new Error(error.error || 'Login failed');
+        }
+        
+        const data = await response.json();
+        setToken(data.token);
+        
+        document.getElementById("loginSection").classList.add("hidden");
+        document.getElementById("dashboardSection").classList.remove("hidden");
+        document.getElementById("studentName").textContent = `Welcome, ${data.student.fullName}`;
+        
+        // Fill student details
+        const detailsTable = document.getElementById("studentDetailsTable");
+        detailsTable.innerHTML = `
+          <tr><th>Student ID</th><td>${data.student.id}</td></tr>
+          <tr><th>Full Name</th><td>${data.student.fullName}</td></tr>
+          <tr><th>Class</th><td>${data.student.classId}</td></tr>
+        `;
+        
+        // Load attendance
+        loadAttendance(data.student.id);
+      } catch (error) {
+        console.error('Login error:', error);
+        alert(error.message);
+      }
+    }
+
+    async function loadAttendance(studentId) {
+      try {
+        const response = await fetch(`/api/attendance/${studentId}`, {
+          headers: getAuthHeader()
+        });
+        const attendance = await response.json();
+        
+        const tbody = document.getElementById("attendanceTable");
+        tbody.innerHTML = "";
+        
+        attendance.forEach(record => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${record.date}</td>
+            <td>${record.status}</td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error loading attendance:', error);
+        alert('Error loading attendance data');
+      }
+    }
+
+    async function submitLeave(event) {
+      event.preventDefault();
+      const studentId = document.getElementById("studentId").value;
+      const from = document.getElementById("leaveFrom").value;
+      const to = document.getElementById("leaveTo").value;
+      const reason = document.getElementById("leaveReason").value;
+      
+      try {
+        const response = await fetch('/api/leave-requests', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            ...getAuthHeader()
+          },
+          body: JSON.stringify({ studentId, fromDate: from, toDate: to, reason })
+        });
+        
+        if (response.ok) {
+          alert('Leave request submitted successfully!');
+          event.target.reset();
+        } else {
+          const error = await response.json();
+          alert(error.error || 'Error submitting leave request');
+        }
+      } catch (error) {
+        console.error('Error submitting leave request:', error);
+        alert('Error submitting leave request');
+      }
+    }
+
+    // Logout function
+    function logoutStudent() {
+      clearToken();
+      document.getElementById("loginSection").classList.remove("hidden");
+      document.getElementById("dashboardSection").classList.add("hidden");
+    }
+  </script>
+
+  <!-- ✅ Include external JS file at end of body -->
+  <script src="student.js" defer></script>
+</body>
+</html>
