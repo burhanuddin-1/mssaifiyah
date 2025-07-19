@@ -413,89 +413,13 @@ async function startServer() {
     
     console.log('Database initialized successfully');
     
-    // Add middleware to log all requests
-    app.use((req, res, next) => {
-      console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
-      console.log('Headers:', JSON.stringify(req.headers, null, 2));
-      console.log('Body:', JSON.stringify(req.body, null, 2));
-      next();
+    // Start the server
+    app.listen(PORT, () => {
+      console.log(`Server is running on port ${PORT}`);
+      console.log(`Visit: http://localhost:${PORT}`);
     });
-
-    // Add error handling middleware
-    app.use((err, req, res, next) => {
-      console.error('Request error:', {
-        error: err.message,
-        stack: err.stack,
-        method: req.method,
-        url: req.url,
-        headers: req.headers,
-        body: req.body
-      });
-      res.status(500).json({ error: 'Internal server error' });
-    });
-
-    // Start listening
-    const server = app.listen(PORT, () => {
-      console.log(`Server is running on http://localhost:${PORT}`);
-      console.log('API endpoints available at:');
-      console.log('/api/students - GET all students');
-      console.log('/api/students/:id - GET specific student');
-      console.log('/api/students - POST add new student');
-      console.log('/api/students/:id - PUT update student');
-      console.log('/api/students/:id - DELETE remove student');
-    });
-
-    // Handle server errors
-    server.on('error', (error) => {
-      console.error('Server error:', {
-        error: error.message,
-        stack: error.stack,
-        type: error.code
-      });
-      process.exit(1);
-    });
-
-    // Handle unhandled rejections
-    process.on('unhandledRejection', (reason, promise) => {
-      console.error('Unhandled Rejection:', {
-        reason,
-        promise
-      });
-      process.exit(1);
-    });
-
-    // Handle uncaught exceptions
-    process.on('uncaughtException', (error) => {
-      console.error('Uncaught Exception:', {
-        error: error.message,
-        stack: error.stack
-      });
-      process.exit(1);
-    });
-
-    // Handle process termination
-    process.on('SIGTERM', () => {
-      console.log('SIGTERM received. Shutting down server...');
-      server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
-      });
-    });
-
-    // Handle process interruption
-    process.on('SIGINT', () => {
-      console.log('SIGINT received. Shutting down server...');
-      server.close(() => {
-        console.log('Server closed');
-        process.exit(0);
-      });
-    });
-
   } catch (error) {
-    console.error('Critical server startup error:', {
-      error: error.message,
-      stack: error.stack
-    });
+    console.error('Failed to start server:', error);
     process.exit(1);
   }
 }
