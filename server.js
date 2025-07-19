@@ -103,6 +103,41 @@ async function initializeDatabase() {
   }
 }
 
+// Function to ensure required users exist in the database
+async function ensureUsersExist() {
+  try {
+    // Add admin user if not exists
+    const adminExists = await db.get(
+      "SELECT 1 FROM users WHERE username = '30406440' AND role = 'admin'"
+    );
+    
+    if (!adminExists) {
+      const hashedAdminPass = await bcrypt.hash('h5253', 10);
+      await db.run(
+        'INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)',
+        ['30406440', hashedAdminPass, 'admin', 'System Administrator']
+      );
+      console.log('✅ Admin user added to database');
+    }
+
+    // Add teacher user if not exists
+    const teacherExists = await db.get(
+      "SELECT 1 FROM users WHERE username = '30353110' AND role = 'teacher'"
+    );
+    
+    if (!teacherExists) {
+      const hashedTeacherPass = await bcrypt.hash('b5253', 10);
+      await db.run(
+        'INSERT INTO users (username, password, role, name) VALUES (?, ?, ?, ?)',
+        ['30353110', hashedTeacherPass, 'teacher', 'Default Teacher']
+      );
+      console.log('✅ Teacher user added to database');
+    }
+  } catch (error) {
+    console.error('Error ensuring users exist:', error);
+  }
+}
+
 // Routes
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname,'index.html'));
@@ -178,28 +213,43 @@ app.delete('/api/students/:id', async (req, res) => {
 });
 
 // Attendance Management
-app.post('/api/attendance', async (req, res) => {
+app.post('/api/attendance', authenticateToken, async (req, res) => {
   try {
-    const { classId, date, marks } = req.body;
+    const userId = req.user.id;
+    const attendanceData = req.body;
     
-    // First, delete existing attendance records for this class and date
-    await db.run('DELETE FROM attendance WHERE studentId IN (SELECT id FROM students WHERE classId = ?) AND date = ?', [classId, date]);
-    
-    // Then insert new records
-    for (const [studentIndex, status] of Object.entries(marks)) {
-      const studentId = (await db.get('SELECT id FROM students WHERE classId = ? LIMIT 1 OFFSET ?', [classId, studentIndex])).id;
-      if (studentId) {
-        await db.run(
-          'INSERT INTO attendance (studentId, date, status, markedBy) VALUES (?, ?, ?, ?)',
-          [studentId, date, status, 'admin']
-        );
-      }
+    // Validate request
+    if (!Array.isArray(attendanceData)) {
+      return res.status(400).json({ error: 'Invalid attendance data' });
     }
     
-    res.json({ message: 'Attendance saved successfully' });
+    // Start a transaction
+    await db.run('BEGIN TRANSACTION');
+    
+    try {
+      for (const record of attendanceData) {
+        // Validate required fields
+        if (!record.studentId || !record.date || !record.status) {
+          throw new Error('Invalid attendance record');
+        }
+        
+        await db.run(
+          `INSERT OR REPLACE INTO attendance 
+           (studentId, date, status, markedBy) 
+           VALUES (?, ?, ?, ?)`,
+          [record.studentId, record.date, record.status, userId]
+        );
+      }
+      
+      await db.run('COMMIT');
+      res.json({ message: 'Attendance saved successfully' });
+    } catch (error) {
+      await db.run('ROLLBACK');
+      throw error;
+    }
   } catch (error) {
     console.error('Error saving attendance:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to save attendance' });
   }
 });
 
@@ -387,36 +437,40 @@ const authenticateToken = (req, res, next) => {
 // Protected routes
 app.get('/api/students', authenticateToken, async (req, res) => {
   try {
-    const students = await db.all('SELECT * FROM students');
+    let query = 'SELECT * FROM students';
+    const params = [];
+    
+    // If user is a teacher, only show their class
+    if (req.user.role === 'teacher') {
+      query += ' WHERE classId = ?';
+      params.push(req.user.classId || '');
+    }
+    
+    const students = await db.all(query, params);
     res.json(students);
   } catch (error) {
     console.error('Error fetching students:', error);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: 'Failed to fetch students' });
   }
 });
 
 // Start server
 async function startServer() {
   try {
-    console.log('Starting server initialization...');
-    
-    // Verify required environment variables
-    if (!process.env.PORT) {
-      console.error('Error: PORT environment variable is not set');
-      process.exit(1);
-    }
-    
-    console.log(`Using port: ${PORT}`);
-    
-    // Initialize database
     await initializeDatabase();
+    await ensureUsersExist(); // Make sure required users exist
     
-    console.log('Database initialized successfully');
-    
-    // Start the server
     app.listen(PORT, () => {
-      console.log(`Server is running on port ${PORT}`);
-      console.log(`Visit: http://localhost:${PORT}`);
+      console.log(`Server is running on http://localhost:${PORT}`);
+      console.log('----------------------------------------');
+      console.log('Admin Login:');
+      console.log('Username: 30406440');
+      console.log('Password: h5253');
+      console.log('----------------------------------------');
+      console.log('Teacher Login:');
+      console.log('Username: 30353110');
+      console.log('Password: b5253');
+      console.log('----------------------------------------');
     });
   } catch (error) {
     console.error('Failed to start server:', error);
